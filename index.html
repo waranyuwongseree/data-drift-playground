@@ -3,94 +3,65 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Data Drift Playground</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<title>Data Drift</title>
+<link rel="stylesheet" href="pg_style.css?v=20">
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/auto-render.min.js"></script>
 <style>
-  :root{--navy:#1e3a8a;--blue:#185fa5;--muted:#6b7280;--bg:#f6f7f9;--card:#fff;--bd:#e6e6e0;--sec:#eef0f4;}
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;margin:0;background:var(--bg);color:#222;height:100vh;overflow:hidden;padding:14px 18px}
-  .wrap{max-width:1180px;margin:0 auto;height:100%;display:flex;flex-direction:column;gap:11px}
-  h1{font-size:19px;font-weight:600;color:var(--navy);margin:0;flex:none}
-  .tabs{display:flex;flex-wrap:wrap;gap:7px;flex:none}
-  .tabbtn{font-size:13px;padding:7px 15px;border:1px solid var(--bd);border-radius:999px;background:var(--card);cursor:pointer;color:#555;transition:all .12s}
-  .tabbtn:hover{border-color:#c7c7be}
-  .tabbtn.on{background:var(--navy);color:#fff;border-color:var(--navy)}
-  .main{flex:1;min-height:0;display:grid;grid-template-columns:330px 1fr;gap:22px}
-  @media(max-width:680px){.main{grid-template-columns:1fr}}
-  .controls{min-height:0;overflow-y:auto;padding-right:6px}
-  .dhd{font-size:13px;color:var(--muted);margin:4px 0 9px;padding-bottom:5px;border-bottom:1px solid var(--bd)}
-  .dgrid{display:grid;grid-template-columns:1fr;gap:9px;margin-bottom:15px}
-  .drow{display:flex;align-items:center;gap:11px}
-  .drow.off{opacity:.3}
-  .drow label{font-size:15px;width:42px;color:#333;display:inline-block;text-align:right}
-  .drow .num{width:52px;font-size:13px;padding:4px 6px;border:1px solid var(--bd);border-radius:7px;text-align:right;background:var(--card)}
-  input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:6px;border-radius:4px;background:#d7dbe2;outline:none;margin:0}
+  /* drift-only (โครง/ขนาด/bar = .distcls กลางใน pg_style) — เหลือ: lock · legend sub-parts · univariate rows */
   input[type=range]:disabled{opacity:.5}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;height:19px;border-radius:50%;background:var(--navy);cursor:pointer;border:3px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}
-  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--navy);cursor:pointer;border:3px solid #fff}
-  .viz{min-height:0;display:flex;flex-direction:column;gap:10px}
-  .feq{flex:none;font-size:16px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px;text-align:center;overflow-x:auto}
-  .canvasbox{flex:1;min-height:150px}
-  canvas{width:100%;height:100%;display:block;border:1px solid var(--bd);border-radius:10px;background:var(--card)}
-  .below{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;flex:none}
-  .cm{display:grid;grid-template-columns:auto 1fr 1fr;gap:5px;font-size:13px;align-content:start}
-  .cm .hh{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11.5px;padding:2px 4px;text-align:center}
-  .cm .cell{border-radius:8px;padding:8px;text-align:center}
-  .cm .cell b{font-size:19px;display:block}.cm .cell span{font-size:10.5px}
-  .tp{background:#E1F5EE;color:#085041}.fn{background:#FCEBEB;color:#791F1F}
-  .fp{background:#FAEEDA;color:#633806}.tn{background:#E6F1FB;color:#0C447C}
-  .kcard{background:var(--sec);border-radius:10px;padding:8px 12px;margin-bottom:8px}
-  .kcard .lab{font-size:12px;color:var(--muted)}.kcard .val{font-size:21px;font-weight:600}
-  .sc{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-  .sc .c{background:var(--sec);border-radius:10px;padding:7px 10px}
-  .sc .lab{font-size:12px;color:var(--muted)}.sc .val{font-size:19px;font-weight:600}
-  .ref{font-size:11px;color:#9ca3af;margin-top:1px}
+  .classleg .clrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;color:#555}
+  .classleg .cli .nm{font-weight:600}
+  .classleg .cli.sep{margin-left:8px;padding-left:14px;border-left:1px solid var(--line)}
+  /* control: โชว์ทุกแท็บ จาง+disable เฉพาะตัวที่ไม่เกี่ยวกับแท็บ (ของเดิม) — override central hide */
+  body.pg.distcls .drow.off{display:flex!important;opacity:.42}
+  /* align 3 rows across lcol|mcolA|mcolB: same gap + same row height + same header height */
+  .below .lcol,.below .mcol{gap:9px}
+  .distcls .lcol .lhd,.distcls .mcol .mhd{min-height:20px;height:20px;margin:0 0 6px;line-height:1.3}   /* หัวคอลัมน์สูงเท่ากัน → 3 แถวตรงกัน */
+  .below .urow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0;min-height:50px;font-size:15px}
+  .below .urow b{font-variant-numeric:tabular-nums}
+  .below .uv{display:flex;flex-direction:column;align-items:flex-end;line-height:1.12;flex:none}
+  .below .lev{font-size:11px}
+  .below .mbar{min-height:50px;display:flex;flex-direction:column;justify-content:center;gap:4px;margin:0}
+  .below .mbar .barrow{display:flex;align-items:center;gap:9px}
+  .below .mbar .barrow .track{flex:0 1 58%;min-width:0}   /* bar สั้นลง */
+  .below .mbar .trn{font-size:11.5px;color:#6b7280;white-space:nowrap;margin-left:auto}   /* train อยู่ใต้ test แถวเดียวกับ bar */
 </style>
 </head>
-<body>
+<body class="pg distcls">
+<h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden">Shows how a shift between the train and deploy distributions changes a classifier's metrics (recall, precision, accuracy, F1) and the KL drift score.</h2>
+
 <div class="wrap">
-  <h1 id="h1">Data Drift Playground</h1>
-  <div class="tabs" id="tabs"></div>
-  <div class="main">
-    <div class="controls">
+  <div class="hdr"><h1 id="h1">Data Drift</h1><div class="tabs" id="tabs"></div></div>
+  <div class="layout">
+    <div class="stage">
+      <div class="canvasbox"><canvas id="cv"></canvas></div>
+      <div class="classleg" id="classleg"></div>
+      <div class="below">
+        <div class="lcol" id="uni"></div>
+        <div class="mcol" id="mcolA"></div>
+        <div class="mcol" id="mcolB"></div>
+      </div>
+    </div>
+
+    <div class="panel">
       <div class="dhd" id="hd-train">Train distribution</div>
       <div class="dgrid">
-        <div class="drow" id="row-muOK"><label id="lbl-muOK">&mu;&#8320;</label><input type="range" id="RmuOK" min="1" max="3.5" step="0.1" value="2.2"><input class="num" type="number" id="NmuOK" min="1" max="3.5" step="0.1" value="2.2"></div>
-        <div class="drow" id="row-muNG"><label id="lbl-muNG">&mu;&#8321;</label><input type="range" id="RmuNG" min="3.5" max="7" step="0.1" value="5.0"><input class="num" type="number" id="NmuNG" min="3.5" max="7" step="0.1" value="5.0"></div>
-        <div class="drow" id="row-sOK"><label id="lbl-sOK">&sigma;&#8320;</label><input type="range" id="RsOK" min="0.4" max="1.6" step="0.1" value="0.8"><input class="num" type="number" id="NsOK" min="0.4" max="1.6" step="0.1" value="0.8"></div>
-        <div class="drow" id="row-sNG"><label id="lbl-sNG">&sigma;&#8321;</label><input type="range" id="RsNG" min="0.6" max="2.5" step="0.1" value="1.5"><input class="num" type="number" id="NsNG" min="0.6" max="2.5" step="0.1" value="1.5"></div>
-        <div class="drow" id="row-pNG"><label id="lbl-pNG">&pi;&#8321;</label><input type="range" id="RpNG" min="0.05" max="0.4" step="0.01" value="0.10"><input class="num" type="number" id="NpNG" min="0.05" max="0.4" step="0.01" value="0.10"></div>
-        <div class="drow" id="row-n"><label id="lbl-n">n</label><input type="range" id="Rn" min="20" max="300" step="10" value="100"><input class="num" type="number" id="Nn" min="20" max="300" step="10" value="100"></div>
+        <div class="drow" id="row-muOK"><span class="dlab" id="lbl-muOK"></span><input type="range" id="RmuOK" min="1" max="7" step="0.1" value="2.2"><input class="num" type="number" id="NmuOK" min="1" max="7" step="0.1" value="2.2"></div>
+        <div class="drow" id="row-sOK"><span class="dlab" id="lbl-sOK"></span><input type="range" id="RsOK" min="0.4" max="2.5" step="0.1" value="0.8"><input class="num" type="number" id="NsOK" min="0.4" max="2.5" step="0.1" value="0.8"></div>
+        <div class="drow" id="row-muNG"><span class="dlab" id="lbl-muNG"></span><input type="range" id="RmuNG" min="1" max="7" step="0.1" value="5.0"><input class="num" type="number" id="NmuNG" min="1" max="7" step="0.1" value="5.0"></div>
+        <div class="drow" id="row-sNG"><span class="dlab" id="lbl-sNG"></span><input type="range" id="RsNG" min="0.4" max="2.5" step="0.1" value="1.5"><input class="num" type="number" id="NsNG" min="0.4" max="2.5" step="0.1" value="1.5"></div>
+        <div class="drow" id="row-pNG"><span class="dlab" id="lbl-pNG"></span><input type="range" id="RpNG" min="0.05" max="0.4" step="0.01" value="0.10"><input class="num" type="number" id="NpNG" min="0.05" max="0.4" step="0.01" value="0.10"></div>
       </div>
       <div class="dhd" id="hd-test">Test distribution (deploy)</div>
       <div class="dgrid">
-        <div class="drow" id="row-dmu0"><label id="lbl-dmu0">&Delta;&mu;&#8320;</label><input type="range" id="Rdmu0" min="-2" max="2" step="0.1" value="0"><input class="num" type="number" id="Ndmu0" min="-2" max="2" step="0.1" value="0"></div>
-        <div class="drow" id="row-dmu1"><label id="lbl-dmu1">&Delta;&mu;&#8321;</label><input type="range" id="Rdmu1" min="-2" max="2" step="0.1" value="0"><input class="num" type="number" id="Ndmu1" min="-2" max="2" step="0.1" value="0"></div>
-        <div class="drow" id="row-ds0"><label id="lbl-ds0">&Delta;&sigma;&#8320;</label><input type="range" id="Rds0" min="-0.5" max="1.5" step="0.1" value="0"><input class="num" type="number" id="Nds0" min="-0.5" max="1.5" step="0.1" value="0"></div>
-        <div class="drow" id="row-ds1"><label id="lbl-ds1">&Delta;&sigma;&#8321;</label><input type="range" id="Rds1" min="-0.8" max="2" step="0.1" value="0"><input class="num" type="number" id="Nds1" min="-0.8" max="2" step="0.1" value="0"></div>
-        <div class="drow" id="row-pNGd"><label id="lbl-pNGd">&pi;&#8321;'</label><input type="range" id="RpNGd" min="0.05" max="0.5" step="0.01" value="0.10"><input class="num" type="number" id="NpNGd" min="0.05" max="0.5" step="0.01" value="0.10"></div>
-      </div>
-    </div>
-    <div class="viz">
-      <div class="feq" id="feq"></div>
-      <div class="canvasbox"><canvas id="cv"></canvas></div>
-      <div class="below">
-        <div class="cm">
-          <div class="hh"></div><div class="hh" id="ch-pp">pred + (class 1)</div><div class="hh" id="ch-pn">pred - (class 0)</div>
-          <div class="hh" id="ch-ap">actual class 1</div><div class="cell tp"><b id="tp">0</b><span id="cs-tp">TP caught</span></div><div class="cell fn"><b id="fn">0</b><span id="cs-fn">FN missed</span></div>
-          <div class="hh" id="ch-an">actual class 0</div><div class="cell fp"><b id="fp">0</b><span id="cs-fp">FP false alarm</span></div><div class="cell tn"><b id="tn">0</b><span id="cs-tn">TN correct</span></div>
-        </div>
-        <div>
-          <div class="kcard"><div class="lab" id="lab-kl">KL drift index</div><div class="val" id="skl">0.00</div></div>
-          <div class="sc">
-            <div class="c"><div class="lab" id="lab-rec">recall</div><div class="val" id="srec">&ndash;</div><div class="ref" id="rrec"></div></div>
-            <div class="c"><div class="lab" id="lab-prec">precision</div><div class="val" id="sprec">&ndash;</div><div class="ref" id="rprec"></div></div>
-            <div class="c"><div class="lab" id="lab-acc">accuracy</div><div class="val" id="sacc">&ndash;</div><div class="ref" id="racc"></div></div>
-            <div class="c"><div class="lab" id="lab-f1">F1</div><div class="val" id="sf1">&ndash;</div><div class="ref" id="rf1"></div></div>
-          </div>
-        </div>
+        <div class="drow" id="row-dmu0"><span class="dlab" id="lbl-dmu0"></span><input type="range" id="Rdmu0" min="-2" max="2" step="0.1" value="0"><input class="num" type="number" id="Ndmu0" min="-2" max="2" step="0.1" value="0"></div>
+        <div class="drow" id="row-ds0"><span class="dlab" id="lbl-ds0"></span><input type="range" id="Rds0" min="-0.8" max="2" step="0.1" value="0"><input class="num" type="number" id="Nds0" min="-0.8" max="2" step="0.1" value="0"></div>
+        <div class="drow" id="row-dmu1"><span class="dlab" id="lbl-dmu1"></span><input type="range" id="Rdmu1" min="-2" max="2" step="0.1" value="0"><input class="num" type="number" id="Ndmu1" min="-2" max="2" step="0.1" value="0"></div>
+        <div class="drow" id="row-ds1"><span class="dlab" id="lbl-ds1"></span><input type="range" id="Rds1" min="-0.8" max="2" step="0.1" value="0"><input class="num" type="number" id="Nds1" min="-0.8" max="2" step="0.1" value="0"></div>
+        <div class="drow" id="row-pNGd"><span class="dlab" id="lbl-pNGd"></span><input type="range" id="RpNGd" min="0.05" max="0.5" step="0.01" value="0.10"><input class="num" type="number" id="NpNGd" min="0.05" max="0.5" step="0.01" value="0.10"></div>
+        <div class="drow" id="row-n"><span class="dlab" id="lbl-n"></span><input type="range" id="Rn" min="20" max="300" step="10" value="100"><input class="num" type="number" id="Nn" min="20" max="300" step="10" value="100"></div>
       </div>
     </div>
   </div>
@@ -102,17 +73,16 @@
   function sizeCanvas(){var box=document.querySelector('.canvasbox');var w=box.clientWidth||640,h=box.clientHeight||286;var dpr=window.devicePixelRatio||1;W=w;H=h;SC=dpr;cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}
   var bases=['muOK','muNG','sOK','sNG','pNG','n','dmu0','dmu1','ds0','ds1','pNGd'];
   var BASE={muOK:2.2,muNG:5.0,sOK:0.8,sNG:1.5,pNG:0.10,n:100,dmu0:0,dmu1:0,ds0:0,ds1:0,pNGd:0.10};
-  var MT={'h1':'\\text{Data Drift Playground}','hd-train':'\\text{Train distribution}','hd-test':'\\text{Test distribution (deploy)}',
-    'lbl-muOK':'\\mu_0','lbl-muNG':'\\mu_1','lbl-sOK':'\\sigma_0','lbl-sNG':'\\sigma_1','lbl-pNG':'\\pi_1','lbl-n':'n',
-    'lbl-dmu0':'\\Delta\\mu_0','lbl-dmu1':'\\Delta\\mu_1','lbl-ds0':'\\Delta\\sigma_0','lbl-ds1':'\\Delta\\sigma_1','lbl-pNGd':"\\pi_1'",
-    'ch-pp':'\\hat y=1\\ (\\text{class }1)','ch-pn':'\\hat y=0\\ (\\text{class }0)','ch-ap':'\\text{actual class }1','ch-an':'\\text{actual class }0',
-    'cs-tp':'\\text{TP — caught}','cs-fn':'\\text{FN — missed}','cs-fp':'\\text{FP — false alarm}','cs-tn':'\\text{TN — correct}',
-    'lab-kl':'\\text{KL drift index}','lab-rec':'\\text{recall}','lab-prec':'\\text{precision}','lab-acc':'\\text{accuracy}','lab-f1':'\\text{F1}'};
+  // labels: subscript + = positive class, − = negative class (matches the canvas naming)
+  var MT={'h1':'\\text{Data Drift}','hd-train':'\\textcolor{#6b7280}{\\text{Train distribution}}','hd-test':'\\textcolor{#1e3a8a}{\\text{Test distribution (deploy)}}',
+    'lbl-muOK':'\\mu_-','lbl-muNG':'\\mu_+','lbl-sOK':'\\sigma_-','lbl-sNG':'\\sigma_+','lbl-pNG':'\\pi_+','lbl-n':'n',
+    'lbl-dmu0':'\\Delta\\mu_-','lbl-dmu1':'\\Delta\\mu_+','lbl-ds0':'\\Delta\\sigma_-','lbl-ds1':'\\Delta\\sigma_+','lbl-pNGd':"\\pi_+'"};
   var TABS=[
-   {n:'🔧 Sandbox',en:bases.slice(),pre:{}},
+   {n:'No drift',en:['muOK','muNG','sOK','sNG','pNG','n'],pre:{},nodrift:true},
    {n:'Mean shift',en:['dmu0','dmu1'],pre:{}},
    {n:'Variance shift',en:['ds0','ds1'],pre:{}},
-   {n:'Prior shift',en:['pNGd'],pre:{}}
+   {n:'Prior shift',en:['pNGd'],pre:{}},
+   {n:'Data drift',en:bases.slice(),pre:{}}
   ];
   function gv(b){return parseFloat(document.getElementById('R'+b).value);}
   function erf(x){var s=x<0?-1:1;x=Math.abs(x);var t=1/(1+0.3275911*x);var y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);return s*y;}
@@ -125,12 +95,29 @@
   function qpts(mu,sd,k){var r=[];for(var j=0;j<k;j++)r.push(mu+sd*zq((j+0.5)/k));return r;}
   function scores(M1,S1,M0,S0,p1d,T){var rec=1-Phi((T-M1)/S1),fpr=1-Phi((T-M0)/S0);
     var prec=p1d*rec/Math.max(p1d*rec+(1-p1d)*fpr,1e-9),acc=p1d*rec+(1-p1d)*(1-fpr),f1=2*prec*rec/Math.max(prec+rec,1e-9);
-    return {rec:rec,prec:prec,acc:acc,f1:f1};}
+    return {rec:rec,prec:prec,acc:acc,f1:f1,spec:1-fpr};}
   function renderTexts(){if(!window.katex)return;for(var id in MT){var el=document.getElementById(id);if(el){try{katex.render(MT[id],el,{throwOnError:false});}catch(e){}}}}
+  /* confusion-cell palette: 4 distinct hues, colourblind-distinguishable (CUD), all ≥4.5:1 on white.
+     errors FN(red) vs FP(purple) — different hue family + lightness so they're separable by eye (WCAG 1.4.1) */
+  var G='#3F8F6B',Rd='#B0503A',Am='#b45309',Bl='#3F6E99',Pu='#a21caf',FNt='#8A6510',FPt='#2E7D70';   // pastel "soft muted" text/token tones
+  function kx(t){try{return window.katex?katex.renderToString(t,{throwOnError:false}):t;}catch(e){return t;}}
+  // classification 4-colour (CB-verified): TP red, FN gold, TN blue, FP teal. text uses dark FN/FP; letters are the non-colour cue
+  function tc(t,c){return '\\textcolor{'+c+'}{\\mathrm{'+t+'}}';}
+  var FM={Sensitivity:tc('TP',Rd)+'/('+tc('TP',Rd)+'+'+tc('FN',FNt)+')',
+          Specificity:tc('TN',Bl)+'/('+tc('TN',Bl)+'+'+tc('FP',FPt)+')',
+          Precision:tc('TP',Rd)+'/('+tc('TP',Rd)+'+'+tc('FP',FPt)+')',
+          Accuracy:'('+tc('TP',Rd)+'+'+tc('TN',Bl)+')/n',
+          F1:'2'+tc('TP',Rd)+'/(2'+tc('TP',Rd)+'+'+tc('FP',FPt)+'+'+tc('FN',FNt)+')',
+          AUC:'P(\\hat p_+\\!>\\!\\hat p_-)'};
+  function bar(name,dv,tv){dv=Math.max(0,Math.min(1,dv));tv=Math.max(0,Math.min(1,tv));
+    var col=(dv<tv-0.005)?Rd:G;
+    return '<div class="mbar"><div class="nm"><span class="lab">'+kx('\\text{'+name+'}\\;'+FM[name])+'</span><span class="v" style="color:'+col+'">'+kx(Math.round(dv*100)+'\\%')+'</span></div>'
+      +'<div class="barrow"><span class="track"><span class="trainbar" style="width:'+(tv*100)+'%;background:'+col+'"></span><span class="fill" style="width:'+(dv*100)+'%;background:'+col+'"></span></span><span class="trn">'+kx('\\text{train }'+Math.round(tv*100)+'\\%')+'</span></div></div>';}
   function upd(){
    try{
     var m0=gv('muOK'),s0=gv('sOK'),m1=gv('muNG'),s1=gv('sNG'),p1=gv('pNG');
     var n=Math.round(gv('n')),dmu0=gv('dmu0'),dmu1=gv('dmu1'),ds0=gv('ds0'),ds1=gv('ds1'),p1d=gv('pNGd');
+    if(TABS[curTab]&&TABS[curTab].nodrift){p1d=p1;document.getElementById('RpNGd').value=p1;document.getElementById('NpNGd').value=p1.toFixed(2);}
     var T=thr(m0,s0,m1,s1,p1);
     var M0=m0+dmu0,S0=Math.max(.2,s0+ds0),M1=m1+dmu1,S1=Math.max(.2,s1+ds1);
     var n1=Math.max(1,Math.round(n*p1d)),n0=n-n1;
@@ -139,27 +126,23 @@
     for(i=0;i<ng.length;i++){if(ng[i]>T)TP++;else FN++;}
     for(i=0;i<ok.length;i++){if(ok[i]>T)FP++;else TN++;}
     var dS=scores(M1,S1,M0,S0,p1d,T), tS=scores(m1,s1,m0,s0,p1,T);
+    function auc(a0,sa0,a1,sa1){return Phi((a1-a0)/Math.sqrt(sa0*sa0+sa1*sa1));}
+    var dAUC=auc(M0,S0,M1,S1), tAUC=auc(m0,s0,m1,s1);
     var trM=mmv(m0,s0,m1,s1,p1),dpM=mmv(M0,S0,M1,S1,p1d),KL=KLg(dpM[0],dpM[1],trM[0],trM[1]);
-    document.getElementById('tp').textContent=TP;document.getElementById('fn').textContent=FN;
-    document.getElementById('fp').textContent=FP;document.getElementById('tn').textContent=TN;
-    function col(d,t){return d<t-0.005?'#A32D2D':'#0F6E56';}
-    document.getElementById('srec').textContent=Math.round(dS.rec*100)+'%';document.getElementById('srec').style.color=col(dS.rec,tS.rec);
-    document.getElementById('sprec').textContent=Math.round(dS.prec*100)+'%';document.getElementById('sprec').style.color=col(dS.prec,tS.prec);
-    document.getElementById('sacc').textContent=Math.round(dS.acc*100)+'%';document.getElementById('sacc').style.color=col(dS.acc,tS.acc);
-    document.getElementById('sf1').textContent=dS.f1.toFixed(2);document.getElementById('sf1').style.color=col(dS.f1,tS.f1);
-    document.getElementById('rrec').textContent='train '+Math.round(tS.rec*100)+'%';
-    document.getElementById('rprec').textContent='train '+Math.round(tS.prec*100)+'%';
-    document.getElementById('racc').textContent='train '+Math.round(tS.acc*100)+'%';
-    document.getElementById('rf1').textContent='train '+tS.f1.toFixed(2);
-    document.getElementById('skl').textContent=KL.toFixed(3);document.getElementById('skl').style.color=KL>0.1?'#A32D2D':'#0F6E56';
-    var sT=Math.sqrt(trM[1]),sD=Math.sqrt(dpM[1]);
-    var tex='D_{KL}=\\ln\\frac{\\sigma_T}{\\sigma_D}+\\frac{\\sigma_D^{2}+(\\mu_D-\\mu_T)^{2}}{2\\sigma_T^{2}}-\\tfrac12='+
-      '\\ln\\frac{'+sT.toFixed(2)+'}{'+sD.toFixed(2)+'}+\\frac{'+dpM[1].toFixed(2)+'+'+Math.pow(dpM[0]-trM[0],2).toFixed(2)+'}{'+(2*trM[1]).toFixed(2)+'}-0.5=\\mathbf{'+KL.toFixed(3)+'}';
-    var fe=document.getElementById('feq');
-    if(window.katex){try{katex.render(tex,fe,{throwOnError:false});}catch(e){fe.textContent='KL = '+KL.toFixed(3);}}
-    else fe.textContent='D_KL = ln(sT/sD) + (sD^2+(muD-muT)^2)/(2 sT^2) - 0.5 = '+KL.toFixed(3);
-    var L=44,Rm=16, pw=W-L-Rm, cy=Math.round(H/2);
-    var topA=cy-24, botA=(H-20)-cy;
+    document.getElementById('mcolA').innerHTML='<div class="mhd">'+kx('\\text{Classification metrics}')+'</div>'+bar('Sensitivity',dS.rec,tS.rec)+bar('Specificity',dS.spec,tS.spec)+bar('Precision',dS.prec,tS.prec);
+    document.getElementById('mcolB').innerHTML='<div class="mhd">&nbsp;</div>'+bar('Accuracy',dS.acc,tS.acc)+bar('F1',dS.f1,tS.f1)+bar('AUC',dAUC,tAUC);
+    function cdfMix(x,a,sa,b,sb,p){return (1-p)*Phi((x-a)/sa)+p*Phi((x-b)/sb);}
+    var ks=0,xq; for(xq=-2;xq<=12;xq+=0.1){var dd=Math.abs(cdfMix(xq,m0,s0,m1,s1,p1)-cdfMix(xq,M0,S0,M1,S1,p1d));if(dd>ks)ks=dd;}
+    var psi=0,nb=10,plo=-2,phi=12,pw2=(phi-plo)/nb; for(var bi=0;bi<nb;bi++){var xa=plo+bi*pw2,xb=xa+pw2,pt=Math.max(1e-6,cdfMix(xb,m0,s0,m1,s1,p1)-cdfMix(xa,m0,s0,m1,s1,p1)),qt=Math.max(1e-6,cdfMix(xb,M0,S0,M1,S1,p1d)-cdfMix(xa,M0,S0,M1,S1,p1d));psi+=(qt-pt)*Math.log(qt/pt);}
+    function lvl(v,a,b){return v>b?'#c0392b':(v>a?'#b45309':'#15803d');}
+    function lvlName(v,a,b){return v>b?'high':(v>a?'moderate':'low');}
+    function urow(nm,val,c,lev){return '<div class="urow"><span>'+kx(nm)+'</span><span class="uv"><b style="color:'+c+'">'+kx(val)+'</b><span class="lev" style="color:'+c+'">'+kx('\\text{'+lev+'}')+'</span></span></div>';}
+    document.getElementById('uni').innerHTML='<div class="lhd">'+kx('\\text{Univariate drift}')+'</div>'
+      +urow('\\text{KL}',KL.toFixed(2),lvl(KL,0.1,0.25),lvlName(KL,0.1,0.25))+urow('\\text{KS}',ks.toFixed(2),lvl(ks,0.1,0.2),lvlName(ks,0.1,0.2))+urow('\\text{PSI}',psi.toFixed(2),lvl(psi,0.1,0.25),lvlName(psi,0.1,0.25));
+    var L=44,Rm=16, pw=W-L-Rm;
+    // reserved bands so labels never overlap the curves: TOPB (FN/TP), BOTB (TN/FP), THS (threshold strip)
+    var TOPB=22, BOTB=22, THS=16, cyTop=TOPB, cyBot=H-BOTB-THS, cy=Math.round((cyTop+cyBot)/2);
+    var topA=cy-cyTop, botA=cyBot-cy;
     var xmin=-1, xmax=11;
     function px(x){return L+(x-xmin)/(xmax-xmin)*pw;}
     var c1max=Math.max(pdf(m1,m1,s1),pdf(M1,M1,S1)), c0max=Math.max(pdf(m0,m0,s0),pdf(M0,M0,S0));
@@ -167,46 +150,48 @@
     function y1(d){return cy-d*sc1;} function y0(d){return cy+d*sc0;}
     g.setTransform(SC,0,0,SC,0,0);
     g.clearRect(0,0,W,H);
-    function area(fn,xlo,xhi,ymap,color){g.fillStyle=color;g.beginPath();g.moveTo(px(xlo),cy);var st=90,k,xx;for(k=0;k<=st;k++){xx=xlo+(xhi-xlo)*k/st;g.lineTo(px(xx),ymap(fn(xx)));}g.lineTo(px(xhi),cy);g.closePath();g.fill();}
+    function area(fn,xlo,xhi,ymap,color,hatch){g.fillStyle=color;g.beginPath();g.moveTo(px(xlo),cy);var st=90,k,xx;for(k=0;k<=st;k++){xx=xlo+(xhi-xlo)*k/st;g.lineTo(px(xx),ymap(fn(xx)));}g.lineTo(px(xhi),cy);g.closePath();g.fill();
+      if(hatch){g.save();g.clip();g.strokeStyle=hatch;g.lineWidth=1;var lo=Math.min(px(xlo),px(xhi)),hi=Math.max(px(xlo),px(xhi));for(var hx=lo-H;hx<hi+H;hx+=7){g.beginPath();g.moveTo(hx,0);g.lineTo(hx+H,H);g.stroke();}g.restore();}}
     var d1=function(x){return pdf(x,M1,S1);}, d0=function(x){return pdf(x,M0,S0);};
-    area(d1,xmin,T,y1,'rgba(220,38,38,0.20)');   area(d1,T,xmax,y1,'rgba(15,110,86,0.22)');
-    area(d0,xmin,T,y0,'rgba(37,99,235,0.16)');    area(d0,T,xmax,y0,'rgba(186,117,23,0.26)');
+    area(d1,xmin,T,y1,'rgba(227,178,60,0.58)');   area(d1,T,xmax,y1,'rgba(224,122,95,0.52)');   // FN = อำพัน · TP = coral (เข้มขึ้น)
+    area(d0,xmin,T,y0,'rgba(91,143,185,0.48)');    area(d0,T,xmax,y0,'rgba(91,168,160,0.58)');  // TN = ฟ้า · FP = teal (เข้มขึ้น)
     g.strokeStyle='rgba(128,128,128,0.5)';g.lineWidth=1;g.beginPath();g.moveTo(L,cy);g.lineTo(L+pw,cy);g.stroke();
-    g.fillStyle='rgba(128,128,128,0.9)';g.font='12px sans-serif';g.textAlign='center';
-    for(var a=Math.ceil(xmin);a<=xmax;a+=2)g.fillText(a,px(a),cy+14);
+    g.fillStyle='rgba(128,128,128,0.9)';g.font='14px KaTeX_Main,serif';g.textAlign='center';
+    for(var a=Math.ceil(xmin);a<=xmax;a+=2)g.fillText(a,px(a),cy+13);
     var N=200,x;
-    g.strokeStyle='#A32D2D';g.lineWidth=1.6;g.beginPath();for(i=0;i<=N;i++){x=xmin+(xmax-xmin)*i/N;var Y=y1(pdf(x,m1,s1));if(i==0)g.moveTo(px(x),Y);else g.lineTo(px(x),Y);}g.stroke();
-    g.strokeStyle='#185FA5';g.beginPath();for(i=0;i<=N;i++){x=xmin+(xmax-xmin)*i/N;var Y0=y0(pdf(x,m0,s0));if(i==0)g.moveTo(px(x),Y0);else g.lineTo(px(x),Y0);}g.stroke();
-    g.strokeStyle='#BA7517';g.lineWidth=1.8;g.setLineDash([5,4]);g.beginPath();g.moveTo(px(T),12);g.lineTo(px(T),H-20);g.stroke();g.setLineDash([]);
-    function dot(xp,yp,c){g.fillStyle=c;g.beginPath();g.arc(xp,yp,4.7,0,7);g.fill();}
-    for(i=0;i<ng.length;i++){dot(px(ng[i]),cy-7-(i%3)*7, ng[i]>T?'rgba(15,110,86,0.6)':'rgba(163,45,45,0.6)');}
-    for(i=0;i<ok.length;i++){dot(px(ok[i]),cy+7+(i%3)*7, ok[i]>T?'rgba(186,117,23,0.65)':'rgba(24,95,165,0.5)');}
-    g.textAlign='left';g.font='12px sans-serif';
-    g.fillStyle='#A32D2D';g.fillText('class 1 (positive)',L+2,18);
-    g.fillStyle='#185FA5';g.fillText('class 0 (negative)',L+2,H-24);
-    var lx=W-150;g.strokeStyle='#555';g.lineWidth=2;g.beginPath();g.moveTo(lx,13);g.lineTo(lx+20,13);g.stroke();
-    g.fillStyle='#555';g.textAlign='left';g.fillText('train',lx+24,17);
-    g.fillStyle='rgba(120,120,120,0.4)';g.fillRect(lx+60,7,20,12);
-    g.fillStyle='#555';g.fillText('test',lx+84,17);
-    g.fillStyle='#0F6E56';g.fillText('TP '+TP,px(T)+6,30);
-    g.fillStyle='#A32D2D';g.textAlign='right';g.fillText('FN '+FN,px(T)-6,30);
-    g.fillStyle='#BA7517';g.textAlign='left';g.fillText('FP '+FP,px(T)+6,H-32);
-    g.fillStyle='#185FA5';g.textAlign='right';g.fillText('TN '+TN,px(T)-6,H-32);
-    g.fillStyle='#BA7517';g.textAlign='center';g.fillText('threshold '+T.toFixed(1),px(T),H-6);
-   }catch(e){g.fillStyle='#A32D2D';g.font='12px sans-serif';g.fillText('err: '+e.message,10,20);}
+    g.strokeStyle='#E07A5F';g.lineWidth=1.6;g.beginPath();for(i=0;i<=N;i++){x=xmin+(xmax-xmin)*i/N;var Y=y1(pdf(x,m1,s1));if(i==0)g.moveTo(px(x),Y);else g.lineTo(px(x),Y);}g.stroke();
+    g.strokeStyle='#5B8FB9';g.beginPath();for(i=0;i<=N;i++){x=xmin+(xmax-xmin)*i/N;var Y0=y0(pdf(x,m0,s0));if(i==0)g.moveTo(px(x),Y0);else g.lineTo(px(x),Y0);}g.stroke();
+    g.strokeStyle='#111';g.lineWidth=1.8;g.setLineDash([5,4]);g.beginPath();g.moveTo(px(T),cyTop-8);g.lineTo(px(T),H-THS+2);g.stroke();g.setLineDash([]);
+    function dot(xp,yp,c,ring){g.fillStyle=c;g.beginPath();g.arc(xp,yp,4.7,0,7);g.fill();if(ring){g.strokeStyle=ring;g.lineWidth=2;g.beginPath();g.arc(xp,yp,6.8,0,7);g.stroke();}}
+    for(i=0;i<ng.length;i++){dot(px(ng[i]),cy-7-(i%3)*7,'rgba(224,122,95,0.9)',ng[i]<=T?'#5B8FB9':null);}   // positive=coral · FN วงขอบ=ทายเป็น negative (ฟ้า)
+    for(i=0;i<ok.length;i++){dot(px(ok[i]),cy+7+(i%3)*7,'rgba(91,143,185,0.85)',ok[i]>T?'#E07A5F':null);}    // negative=ฟ้า · FP วงขอบ=ทายเป็น positive (coral)
+    function lab(txt,x,y,align,color,sz){g.font=(sz||15)+'px KaTeX_Main,serif';g.textAlign=align;g.textBaseline='alphabetic';g.fillStyle=color;g.fillText(txt,x,y);}
+    // confusion counts ข้างเส้น threshold (เว้น ±12 ไม่ชิด) · class identity อยู่ใน legend นอก canvas
+    lab('FN '+FN,px(T)-12,18,'right','#8A6510',15);
+    lab('TP '+TP,px(T)+12,18,'left','#B0503A',15);
+    lab('TN '+TN,px(T)-12,H-THS-6,'right','#3F6E99',15);
+    lab('FP '+FP,px(T)+12,H-THS-6,'left','#2E7D70',15);
+    lab('threshold '+T.toFixed(1),px(T),H-4,'center','#111',15);
+   }catch(e){g.fillStyle='#c0392b';g.font='15px KaTeX_Main,serif';g.fillText('err: '+e.message,10,20);}
   }
-  function applyTab(k){var Tb=TABS[k];
+  var curTab=0;
+  function applyTab(k){var Tb=TABS[k];curTab=k;
     bases.forEach(function(b){var val=(Tb.pre&&b in Tb.pre)?Tb.pre[b]:BASE[b];
       document.getElementById('R'+b).value=val;document.getElementById('N'+b).value=val;
       var on=Tb.en.indexOf(b)>=0;document.getElementById('R'+b).disabled=!on;document.getElementById('N'+b).disabled=!on;
-      document.getElementById('row-'+b).className='drow'+(on?'':' off');});
+      document.getElementById('row-'+b).className='drow'+(on?'':' off');});   // โชว์ทุกแถวทุกแท็บ · จาง+disable ตัวที่ไม่เกี่ยว (ของเดิม)
     var btns=document.querySelectorAll('.tabbtn');for(var i=0;i<btns.length;i++)btns[i].className='tabbtn'+(i==k?' on':'');
     upd();}
   var tb=document.getElementById('tabs');
-  TABS.forEach(function(Tb,i){var el=document.createElement('button');el.className='tabbtn';el.textContent=Tb.n;el.addEventListener('click',function(){applyTab(i);});tb.appendChild(el);});
+  TABS.forEach(function(Tb,i){var el=document.createElement('button');el.className='tabbtn';if(window.katex)katex.render('\\text{'+Tb.n+'}',el,{throwOnError:false});else el.textContent=Tb.n;el.addEventListener('click',function(){applyTab(i);});tb.appendChild(el);});
   bases.forEach(function(b){var Re=document.getElementById('R'+b),Ne=document.getElementById('N'+b);
     Re.addEventListener('input',function(){Ne.value=Re.value;upd();});
     Ne.addEventListener('input',function(){Re.value=Ne.value;upd();});});
+  function clLine(name,lc,tc){return '<span class="cli"><i class="ln" style="background:'+lc+'"></i><span class="nm">'+kx('\\textcolor{'+tc+'}{\\text{'+name+'}}')+'</span></span>';}
+  document.getElementById('classleg').innerHTML=
+    '<div class="clrow">'+clLine('Positive class','#E07A5F','#B0503A')+clLine('Negative class','#5B8FB9','#3F6E99')
+    +'<span class="cli sep"><i class="ln" style="background:#8b95a6"></i><span>'+kx('\\text{train}')+'</span></span>'
+    +'<span class="cli"><i class="ar" style="background:#c7ccd6"></i><span>'+kx('\\text{test (deploy)}')+'</span></span></div>';
   window.addEventListener('resize',function(){sizeCanvas();upd();});
   sizeCanvas(); applyTab(0); renderTexts();
   requestAnimationFrame(function(){sizeCanvas();renderTexts();upd();});
